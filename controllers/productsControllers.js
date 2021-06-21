@@ -1,30 +1,48 @@
-let products = require("../data");
-const { default: slugify } = require("slugify");
+const { Product } = require("../db/models");
 
-exports.getProduct = (req, res) => {
-  res.json(products);
-};
-
-exports.deleteProduct = (req, res) => {
-  const { productId } = req.params;
-  const foundProduct = products.find((product) => product.id === +productId);
-  if (foundProduct) {
-    products = products.filter((product) => product !== foundProduct);
-    res.status(204).end();
-  } else {
-    res.status(404).json({ message: "ERROR 404" });
+exports.fetchProduct = async (productId, next) => {
+  try {
+    const foundProduct = await Product.findByPk(productId);
+    return foundProduct;
+  } catch (error) {
+    next(error);
   }
 };
 
-exports.addProduct = (req, res) => {
-  const newProductId = products[products.length - 1].id + 1;
-  const newProductslug = slugify(req.body.name.toLowerCase());
-  const newProduct = {
-    id: newProductId,
-    slug: newProductslug,
-    ...req.body,
-  };
-  products.push(newProduct);
-  res.status(201);
-  res.json(newProduct);
+exports.getProduct = async (req, res, next) => {
+  try {
+    const products = await Product.findAll({
+      attributes: { exclude: ["createdAt", "updatedAt"] },
+    });
+    res.json(products);
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.deleteProduct = async (req, res, next) => {
+  try {
+    await req.product.destroy();
+    res.status(204).end();
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.addProduct = async (req, res, next) => {
+  try {
+    const newProduct = await Product.create(req.body);
+    res.status(201).json(newProduct);
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.updateProduct = async (req, res, next) => {
+  try {
+    await req.product.update(req.body);
+    res.status(204).end();
+  } catch (error) {
+    next(error);
+  }
 };
